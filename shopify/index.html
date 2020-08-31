@@ -1,0 +1,146 @@
+<html>
+<head>
+<style>
+#geoaddress-checked {
+    position: relative;
+}
+#geoaddress-checked-input {
+    position: relative;
+}
+#geoaddress-checked ul {
+    position: absolute;
+    top: 42px;
+    width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+    border-top-width: 0;
+    background: white;
+}
+#geoaddress-checked ul li:nth-child(even) {
+    background: #eee;
+}
+#geoaddress-checked ul li {
+    padding: 0 5px;
+}
+</style>
+</head>
+<body>
+<div id="geoaddress-checked"></div>
+
+<script type="text/javascript">
+class GeoAddressChecked {
+  constructor(apiKey, config) {
+    this.apiKey = apiKey;
+    this.url = "https://www.geoaddress-checked.ie/api/v1/";
+    this.config = config;
+    this.list = null;
+    this.detail = null;
+    this.prefix = "geoaddress-checked-";
+    this.initialize();
+  }
+
+  initialize() {
+    document.getElementById("geoaddress-checked").innerHTML = `<input id="${this.prefix}input" type="text" value="" /><input id="${this.prefix}button" type="button" value="Search" /> <ul id="${this.prefix}list" style="display: none"></ul><p id="${this.prefix}detail"></p>`
+    document.getElementById(`${this.prefix}input`).addEventListener("keyup", this.addressSearch);
+    document.getElementById(`${this.prefix}button`).addEventListener("click", this.addressSearch);
+    this.list = document.getElementById(`${this.prefix}list`);
+    this.list.addEventListener("click", this.addressDetail);
+    this.detail = document.getElementById(`${this.prefix}detail`);
+  }
+
+  addressSearch = (event) => {
+    const param = document.getElementById(`${this.prefix}input`).value;
+    const self = this;
+    if (param.length > 3) {
+      const url = `${this.url}search-address`;
+      this.postData(url, { q: param })
+      .then(response => {
+        return response.json();
+      })
+      .then(data => {
+        try {
+          self.makeList(data.results);
+        } catch {
+          self.handleListError(data.message);
+        }
+      })
+    } else {
+      this.list.innerHTML = '';
+      this.list.setAttribute("style", "display: none");
+    }
+  }
+
+  addressDetail = (event) => {
+    this.list.innerHTML = '';
+    this.list.setAttribute("style", "display: none");
+    const param = event.target.id;
+    const url = `${this.url}search-identification`;
+    const self = this;
+    this.postData(url, { identification: param })
+    .then(response => {
+      return response.json();
+    })
+    .then(data => {
+      try {
+        self.makeDetail(data.results);
+      } catch {
+        self.handleDetailError(data.message);
+      }
+    })
+  }
+
+  postData(url = '', data = {}) {
+    const response = fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify(data)
+    })
+    return response;
+  }
+
+  handleListError = (error) => {
+    this.list.innerHTML = '';
+    this.list.innerHTML = `${error}`;
+  }
+
+  handleDetailError = (error) => {
+    this.detail.innerHTML = '';
+    this.detail.innerHTML = `${message}`;
+  }
+
+  makeList = (results) => {
+    this.list.innerHTML = '';
+    this.list.removeAttribute("style");
+    for (const result of results) {
+      this.list.innerHTML += `<li id="${result.identification}">${this.addressRepresentation(result)}</li>`;
+    }
+
+  }
+
+  makeDetail = (result) => {
+    this.detail.innerHTML = '';
+    for (const entry of Object.entries(this.config)) {
+      document.getElementById(entry[1]).value = `${result[entry[0]]}`;
+    }
+  }
+
+  addressRepresentation = (obj) => {
+    return Object.values(obj).filter(value => value).splice(1).join(", ");
+  }
+}
+</script>
+<script type="text/javascript">
+  const geoAddressChecked = new GeoAddressChecked(
+    "YOURTOKEN", {
+    addr_1: "AddressCompanyNew",
+    addr_2: "AddressAddress1New",
+    addr_4: "AddressAddress2New",
+    addr_3: "AddressCityNew",
+    eircode: "AddressZipNew",
+  });
+</script>
+</body>
+</html>
