@@ -1,0 +1,222 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>GeoAddressChecked Basic Example</title>
+  <meta name="GeoAddressChecked Basic Example">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200&display=swap" rel="stylesheet">
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
+
+  <style>
+    body {
+      background: #005a70;
+      font-family: 'Poppins', sans-serif;
+    }
+    .container {
+      padding: 100px 150px;
+    }
+    h3 {
+      color: #F68A39;
+    }
+    #geoaddress-checked-blurb {
+      border: 2px solid #F68A39;
+      border-radius: .625rem;
+      color: white;
+    }
+    #geoaddress-checked-list {
+      margin-top: -2px;
+      max-height: 300px;
+      background: white;
+      border-radius: 0 0 .625rem .625rem;
+      overflow-y: auto;
+    }
+    .geoaddress-checked-list-item:hover {
+      cursor: pointer;
+      background: #005a70;
+      color: white;
+    }
+    #geoaddress-checked-api-response {
+      margin-top: 3rem;
+      background: white;
+      border-radius: .626rem;
+      padding: 2rem;
+    }
+    .geoaddress-checked-api-prompt {
+      color: #F68A39;
+      font-weight: bold;
+      width: 200px;
+    }
+    .geoaddress-checked-api-result {
+      color: #005a70;
+    }
+  </style>
+
+</head>
+<body>
+<div class="container">
+  <h3 class="text-center mb-4">Welcome to the GeoAddress Checked demo</h3>
+  <p id="geoaddress-checked-blurb" class="p-3 mb-4">
+    Start typing into the input below to search for your address,
+    click on a suggestion once a suggestion dropdown appears and retreive address details.
+  </p>
+  <div class="input-group input-group-lg">
+    <input type="text" id="geoaddress-checked-input" class="form-control" placeholder="Find your address" aria-label="Find your address" aria-describedby="clear-button">
+    <div class="input-group-append">
+      <button class="btn btn-info" type="button" id="geoaddress-checked-search-button">Search</button>
+      <button class="btn btn-danger" type="button" id="geoaddress-checked-clear-button">Clear</button>
+    </div>
+  </div>
+  <div id="geoaddress-checked-list" class="border p-2" style="display:none;">Suggestions</div>
+  <div id="geoaddress-checked-api-response">
+    <h5 class="border-bottom font-weight-bold pb-2">API response</h5>
+    <div id="geoaddress-checked-detail"></div>
+  </div>
+</div>
+<script type="text/javascript">
+
+class GeoAddressChecked {
+  constructor(apiKey, config) {
+    this.apiKey = apiKey;
+    this.url = "https://www.geoaddress-checked.ie/api/v1/";
+    this.config = config;
+    this.input = null;
+    this.list = null;
+    this.detail = null;
+    this.prefix = "geoaddress-checked-";
+    this.initialize();
+    this.buffer = [];
+    this.currentQuery = '';
+    this.buffer = [];
+  }
+  initialize() {
+    this.input = document.getElementById(`${this.prefix}input`);
+    this.input.addEventListener("keyup", this.addressSearch);
+    this.list = document.getElementById(`${this.prefix}list`);
+    this.list.addEventListener("click", this.addressDetail);
+    this.detail = document.getElementById(`${this.prefix}detail`);
+    document.getElementById(`${this.prefix}search-button`).addEventListener("click", this.addressSearch);
+    document.getElementById(`${this.prefix}clear-button`).addEventListener("click", this.clearAll);
+  }
+  addressSearch = (event) => {
+    const param = document.getElementById(`${this.prefix}input`).value;
+    const self = this;
+    if (param.length > 3) {
+      const url = `${this.url}search-address`;
+      this.postData(url, { q: param })
+      .then(response => {
+        return response.json();
+      })
+      .then(data => {
+        try {
+          if (data.results.length > 0) {
+            self.buffer = data.results;
+          }
+          self.makeList(self.buffer);
+
+        } catch (err) {
+          self.handleListError(data.message);
+        }
+      })
+    } else {
+      this.list.innerHTML = '';
+      this.list.setAttribute("style", "display: none");
+    }
+  }
+  addressDetail = (event) => {
+    this.list.innerHTML = '';
+    this.list.setAttribute("style", "display: none");
+    const param = event.target.id;
+    const url = `${this.url}search-identification`;
+    const self = this;
+    this.postData(url, { identification: param })
+    .then(response => {
+      return response.json();
+    })
+    .then(data => {
+      try {
+        self.makeDetail(data.results);
+      } catch (err) {
+        self.handleDetailError(data.message);
+      }
+    })
+  }
+  postData(url = '', data = {}) {
+    const response = fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify(data)
+    })
+    return response;
+  }
+  handleListError = (error) => {
+    this.list.innerHTML = '';
+    this.list.innerHTML = `${error}`;
+  }
+  handleDetailError = (error) => {
+    this.detail.innerHTML = '';
+    this.detail.innerHTML = `${message}`;
+  }
+  makeList = (results) => {
+    this.list.innerHTML = '';
+    this.list.removeAttribute("style");
+    for (const result of results) {
+      this.list.innerHTML += `<div class="p-2 geoaddress-checked-list-item" id="${result.identification}">${this.addressRepresentation(result)}</div>`;
+    }
+  }
+  makeDetail = (result) => {
+    this.detail.innerHTML = '';
+    Object.keys(result).forEach( dataKey => {
+      if (result[dataKey] !== '' && result[dataKey] !== null) {
+        const dataNode = document.createElement("DIV");
+        dataNode.innerHTML = `<div class="${this.prefix}api-item"><div class="d-inline-block ${this.prefix}api-prompt">${this.config[dataKey]}</div><div class="d-inline-block ${this.prefix}api-result">${result[dataKey]}</div></div>`;
+        this.detail.appendChild(dataNode);
+      }
+    })
+  }
+  addressRepresentation = (obj) => {
+    return Object.values(obj).filter(value => value).splice(1).join(", ");
+  }
+  clearAll = () => {
+    this.list.innerHTML = '';
+    this.list.setAttribute("style", "display: none");
+    this.detail.innerHTML = '';
+    this.input.value = '';
+  }
+}
+</script>
+<script type="text/javascript">
+  const geoAddressChecked = new GeoAddressChecked(
+    "YOUR_TOKEN", {
+    addr_1: "Address line 1",
+    addr_2: "Address line 2",
+    addr_3: "Address line 3",
+    addr_4: "Address line 4",
+    addr_4: "Address line 4",
+    addr_5: "Address line 5",
+    addr_6: "Address line 6",
+    addr_7: "Address line 7",
+    addr_8: "Address line 8",
+    addr_9: "Address line 9",
+    addr_10: "Address line 10",
+    eircode: "Eircode",
+    identification: "Identification",
+    itm_location: "ITM location",
+    location: "Location",
+    nace_code: "NACE code",
+    nace_code_description: "NACE code description",
+    small_area: "Small area",
+    unique: "Unique address",
+  });
+</script>
+</body>
+</html>
