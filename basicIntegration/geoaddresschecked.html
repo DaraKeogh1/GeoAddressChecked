@@ -90,10 +90,8 @@ class GeoAddressChecked {
     this.list = null;
     this.detail = null;
     this.prefix = "geoaddress-checked-";
+    this.buffer = [];
     this.initialize();
-    this.buffer = [];
-    this.currentQuery = '';
-    this.buffer = [];
   }
   initialize() {
     this.input = document.getElementById(`${this.prefix}input`);
@@ -119,7 +117,6 @@ class GeoAddressChecked {
             self.buffer = data.results;
           }
           self.makeList(self.buffer);
-
         } catch (err) {
           self.handleListError(data.message);
         }

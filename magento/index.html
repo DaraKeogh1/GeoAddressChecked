@@ -11,6 +11,7 @@ class GeoAddressChecked {
     this.list = null;
     this.detail = null;
     this.prefix = "geoaddress-checked-";
+    this.buffer = [];
     this.initialize();
   }
 
@@ -34,7 +35,10 @@ class GeoAddressChecked {
       })
       .then(data => {
         try {
-          self.makeList(data.results);
+          if (data.results.length > 0) {
+            self.buffer = data.results;
+          }
+          self.makeList(self.buffer);
         } catch {
           self.handleListError(data.message);
         }
