@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>
+      Search widget with custom source | Sample | ArcGIS API for JavaScript 4.18
+    </title>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.18/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.18/"></script>
+
+    <script>
+      require([
+        "esri/Map",
+        "esri/Graphic",
+        "esri/request",
+        "esri/config",
+        "esri/views/MapView",
+        "esri/widgets/Search",
+        "esri/widgets/Search/SearchSource",
+        "esri/geometry/geometryEngine",
+        "esri/geometry/Point"
+      ], function (
+        Map,
+        Graphic,
+        esriRequest,
+        esriConfig,
+        MapView,
+        Search,
+        SearchSource,
+        geometryEngine,
+        Point
+      ) {
+        // Adjust the URL based on your TOKEN type
+        const url = "https://www.geoaddress-checked.ie/api/v1/";
+        // Replace YOUR KEY with your token
+        const apiKey = "YOURKEY";
+
+        let map = new Map({
+          basemap: "streets-vector"
+        });
+
+        let view = new MapView({
+          container: "viewDiv",
+          map: map,
+          center: [-7.78,53.27], // lon, lat
+          scale: 3000000
+        });
+        // Create a custom search source for the search widget.
+        // We will need this to access geodirectory api
+        let customSearchSource = new SearchSource({
+          placeholder: "example: rotunda hospital",
+          getSuggestions: function (params) {
+            let param = params.suggestTerm;
+            if(param.length > 3 ){
+              return esriRequest(url + "search-address", {
+                query: {
+                  q: param
+                },
+                responseType: "json",
+                method:"post",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": " Bearer " + apiKey
+                }
+              }).then(function (results) {
+                return results.data.results.map(function (feature) {
+                  let text = feature.addr_1 + ' ' + feature.addr_2 + feature.addr_3 + ' ' + feature.addr_4
+                  return {
+                    key: "name",
+                    text: text,
+                    sourceIndex: params.sourceIndex,
+                    identification: feature.identification
+                  };
+                });
+              });
+            }
+          },
+
+          getResults: function (params) {
+            let operation = "search-identification";
+            let query = {
+              identification : params.suggestResult.identification
+            };
+            return esriRequest(url + operation, {
+              query: query,
+              responseType: "json",
+              method: "post",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": " Bearer " + apiKey
+              }
+            }).then(function (results) {
+              let searchResults = results.data.results;
+              let location = searchResults.location.split(',');
+              let latitude = parseFloat(location[0]);
+              let longitude = parseFloat(location[1]);
+              let attributes = {
+                addr_1: searchResults.addr_1,
+                addr_2: searchResults.addr_2,
+                addr_3: searchResults.addr_3,
+                addr_4: searchResults.addr_4,
+                eircode: searchResults.eircode,
+              }
+              let graphic = new Graphic({
+                geometry: new Point({
+                  latitude: latitude,
+                  longitude: longitude
+                }),
+                attributes: attributes
+              });
+
+              let buffer = geometryEngine.geodesicBuffer(
+                  graphic.geometry,
+                  100,
+                  "meters",
+                  true
+              );
+              let searchResult = {
+                  extent: buffer.extent,
+                  feature: graphic,
+                  name: attributes.addr_1 + ' ' + attributes.addr_2 + ' ' + attributes.addr_3 + ' ' + attributes.addr_4 + ' ' + attributes.eircode
+                };
+
+              return [searchResult];
+
+            });
+          }
+        });
+
+        // Create Search widget using custom SearchSource
+        let searchWidget = new Search({
+          view: view,
+          sources: [customSearchSource],
+          includeDefaultSources: false
+        });
+
+        // Add the search widget to the top left corner of the view
+        view.ui.add(searchWidget, {
+          position: "top-right"
+        });
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+</html>
