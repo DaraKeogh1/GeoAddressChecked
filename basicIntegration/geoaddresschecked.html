@@ -64,7 +64,7 @@
   <h3 class="text-center mb-4">Welcome to the GeoAddress Checked demo</h3>
   <p id="geoaddress-checked-blurb" class="p-3 mb-4">
     Start typing into the input below to search for your address,
-    click on a suggestion once a suggestion dropdown appears and retreive address details.
+    click on a suggestion once a suggestion dropdown appears and retrieved address details.
   </p>
   <div class="input-group input-group-lg">
     <input type="text" id="geoaddress-checked-input" class="form-control" placeholder="Find your address" aria-label="Find your address" aria-describedby="clear-button">
@@ -84,13 +84,14 @@
 class GeoAddressChecked {
   constructor(apiKey, config) {
     this.apiKey = apiKey;
+    /* if you are using a developer token, you must amend the url with 'dev'
+    https://www.geoaddress-checked.ie/api/dev/v1/ */
     this.url = "https://www.geoaddress-checked.ie/api/v1/";
     this.config = config;
     this.input = null;
     this.list = null;
     this.detail = null;
     this.prefix = "geoaddress-checked-";
-    this.buffer = [];
     this.initialize();
   }
   initialize() {
@@ -113,10 +114,7 @@ class GeoAddressChecked {
       })
       .then(data => {
         try {
-          if (data.results.length > 0) {
-            self.buffer = data.results;
-          }
-          self.makeList(self.buffer);
+          self.makeList(data.results);
         } catch (err) {
           self.handleListError(data.message);
         }
@@ -166,9 +164,14 @@ class GeoAddressChecked {
   makeList = (results) => {
     this.list.innerHTML = '';
     this.list.removeAttribute("style");
-    for (const result of results) {
-      this.list.innerHTML += `<div class="p-2 geoaddress-checked-list-item" id="${result.identification}">${this.addressRepresentation(result)}</div>`;
+    if (results.length > 0) {
+      for (const result of results) {
+        this.list.innerHTML += `<div class="p-2 geoaddress-checked-list-item" id="${result.identification}">${this.addressRepresentation(result)}</div>`;
+      }
+    } else {
+      this.list.innerHTML = `<div>No results so far. Please amend your search.</div>`;
     }
+
   }
   makeDetail = (result) => {
     this.detail.innerHTML = '';

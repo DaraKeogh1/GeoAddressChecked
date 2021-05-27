@@ -73,7 +73,7 @@
   <h3 class="text-center mb-4">Welcome to the GeoAddress Checked demo</h3>
   <p id="geoaddress-checked-blurb" class="p-3 mb-4">
     Start typing into the input below to search for your address,
-    click on a suggestion once a suggestion dropdown appears and retreive address details.
+    click on a suggestion once a suggestion dropdown appears and retrieved address details.
   </p>
   <div class="input-group input-group-lg">
     <input type="text" id="geoaddress-checked-input" class="form-control" placeholder="Find your address" aria-label="Find your address" aria-describedby="clear-button">
@@ -92,6 +92,8 @@
 <script type="text/javascript">
 (function() {
   var apiKey = "YOUR_TOKEN";
+  /* if you are using a developer token, you must amend the url with 'dev'
+  https://www.geoaddress-checked.ie/api/dev/v1/ */
   var primaryUrl = "https://www.geoaddress-checked.ie/api/v1/";
   var config = {
     addr_1: "Address line 1",
@@ -119,7 +121,6 @@
   var list = null;
   var detail = null;
   var prefix = "geoaddress-checked-";
-  var buffer = [];
 
   function initialize() {
     input = document.getElementById("".concat(prefix, "input"));
@@ -145,10 +146,7 @@
         },
         success: function(data) {
           try {
-            if (data.results.length > 0) {
-              buffer = data.results;
-            }
-            makeList(buffer);
+            makeList(data);
           } catch (_unused) {
             handleListError(data.message);
           }
@@ -197,10 +195,14 @@
   function makeList(results) {
     list.innerHTML = '';
     list.removeAttribute("style");
-    results.forEach(function(result) {
-      var formattedAddress = addressRepresentation(result);
-      list.innerHTML += "<div class=\"p-2 geoaddress-checked-list-item\" id=\"".concat(result.identification, "\">").concat(formattedAddress, "</div>");
-    })
+    if (results.length > 0) {
+      results.forEach(function(result) {
+        var formattedAddress = addressRepresentation(result);
+        list.innerHTML += "<div class=\"p-2 geoaddress-checked-list-item\" id=\"".concat(result.identification, "\">").concat(formattedAddress, "</div>");
+      })
+    } else {
+      list.innerHTML = "<div>No results so far. Please amend your search.</div>";
+    }
   }
 
   function makeDetail(result) {
