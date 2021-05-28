@@ -6,12 +6,13 @@
 class GeoAddressChecked {
   constructor(apiKey, config) {
     this.apiKey = apiKey;
+    /* if you are using a developer token, you must amend the url with 'dev'
+    https://www.geoaddress-checked.ie/api/dev/v1/ */
     this.url = "https://www.geoaddress-checked.ie/api/v1/";
     this.config = config;
     this.list = null;
     this.detail = null;
     this.prefix = "geoaddress-checked-";
-    this.buffer = [];
     this.initialize();
   }
 
@@ -35,10 +36,7 @@ class GeoAddressChecked {
       })
       .then(data => {
         try {
-          if (data.results.length > 0) {
-            self.buffer = data.results;
-          }
-          self.makeList(self.buffer);
+          self.makeList(data.result);
         } catch {
           self.handleListError(data.message);
         }
@@ -93,10 +91,13 @@ class GeoAddressChecked {
   makeList = (results) => {
     this.list.innerHTML = '';
     this.list.removeAttribute("style");
-    for (const result of results) {
-      this.list.innerHTML += `<li id="${result.identification}">${this.addressRepresentation(result)}</li>`;
+    if (results.length > 0) {
+      for (const result of results) {
+        this.list.innerHTML += `<li id="${result.identification}">${this.addressRepresentation(result)}</li>`;
+      }
+    } else {
+      this.list.innerHTML = `<div>No results so far. Please amend your search.</div>`;
     }
-
   }
 
   makeDetail = (result) => {
