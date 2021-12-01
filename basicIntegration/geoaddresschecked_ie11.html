@@ -91,6 +91,7 @@
 
 <script type="text/javascript">
 (function() {
+  /* Replace "YOUR_TOKEN" here with your token */
   var apiKey = "YOUR_TOKEN";
   /* if you are using a developer token, you must amend the url with 'dev'
   https://www.geoaddress-checked.ie/api/dev/v1/ */
@@ -115,6 +116,28 @@
     nace_code_description: "NACE code description",
     small_area: "Small area",
     unique: "Unique address",
+    building_group_name: "Building group name",
+    building_name: "Building name",
+    building_number: "Building number",
+    department: "Department",
+    irish_addr_1: "Irish address line 1",
+    irish_addr_2: "Irish address line 2",
+    irish_addr_3: "Irish address line 3",
+    irish_addr_4: "Irish address line 4",
+    irish_addr_5: "Irish address line 5",
+    irish_addr_6: "Irish address line 6",
+    irish_addr_7: "Irish address line 7",
+    irish_addr_8: "Irish address line 8",
+    irish_addr_9: "Irish address line 9",
+    irish_addr_10: "Irish address line 10",
+    locality: "Locality",
+    organisation_name: "Organisation name",
+    post_town: "Post town",
+    secondary_locality: "Secondary locality",
+    secondary_thoroughfare: "Secondary thoroughfare",
+    sub_building_name: "Sub building name",
+    thoroughfare: "Thoroughfare",
+    county: "County"
   };
 
   var input = null;
@@ -146,7 +169,7 @@
         },
         success: function(data) {
           try {
-            makeList(data);
+            makeList(data.results);
           } catch (_unused) {
             handleListError(data.message);
           }
